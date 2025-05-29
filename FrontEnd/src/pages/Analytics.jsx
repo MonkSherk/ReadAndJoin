@@ -1,0 +1,39 @@
+import React, { useEffect, useState } from 'react'
+import Layout from 'src/components/layout/Layout'
+import api from 'src/utils/api'
+
+export default function Analytics() {
+    const [data, setData] = useState(null)
+
+    useEffect(() => {
+        api.get('/users/analytics/').then(res => setData(res.data))
+    }, [])
+
+    if (!data) return <Layout><p>Загрузка...</p></Layout>
+
+    return (
+        <Layout>
+            <h2 className="text-3xl font-serif mb-6">Аналитика</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <p>Постов за 30 дней</p>
+                    <p className="text-xl">{data.posts_count}</p>
+                </div>
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <p>Средняя длина</p>
+                    <p className="text-xl">{data.avg_post_length}</p>
+                </div>
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <p>Топ-теги</p>
+                    <ul className="list-disc list-inside">
+                        {data.top_tags.map(tag => <li key={tag}>{tag}</li>)}
+                    </ul>
+                </div>
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <p>Последняя активность</p>
+                    <p className="text-xl">{data.last_activity || '—'}</p>
+                </div>
+            </div>
+        </Layout>
+    )
+}

@@ -1,0 +1,104 @@
+// src/pages/Login.jsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Input from 'src/components/ui/Input';
+import Button from 'src/components/ui/Button';
+import ThemeToggle from 'src/components/ui/ThemeToggle';
+import api from 'src/utils/api';
+import { useAuthStore } from 'src/stores/authStore';
+
+export default function Login() {
+    const nav = useNavigate();
+    const setAuth = useAuthStore((s) => s.setAuth);
+    const [form, setForm] = useState({ username: '', password: '' });
+    const [submitError, setSubmitError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setSubmitError('');
+
+        try {
+            const res = await api.post('/users/login/', {
+                username: form.username,
+                password: form.password,
+            });
+
+            const { access, refresh, detail } = res.data;
+
+            if (access) {
+                // Сохраняем токены и редиректим на главную
+                setAuth({ /* user можно загрузить отдельно */ }, access, refresh);
+                nav('/');
+            } else {
+                // На случай, если бэк вернёт detail без токенов
+                setSubmitError(detail || 'Не удалось войти');
+            }
+        } catch (err) {
+            // Обрабатываем ошибку с бэка (например, неверные креды)
+            const msg =
+                err.response?.data?.detail ||
+                Object.values(err.response?.data || {})
+                    .flat()
+                    .join(' ') ||
+                'Ошибка входа';
+            setSubmitError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
+            <form
+                onSubmit={handleSubmit}
+                className={`
+          w-full max-w-sm p-8 bg-white dark:bg-gray-800
+          rounded-3xl shadow-lg transition
+          ${submitError ? 'animate-shake' : ''}
+        `}
+            >
+                <h2 className="text-2xl font-bold mb-6 text-center">
+                    Войти
+                </h2>
+
+                {submitError && (
+                    <p className="mb-4 text-center text-red-500 animate-fadeIn">
+                        {submitError}
+                    </p>
+                )}
+
+                <Input
+                    label="Имя пользователя"
+                    placeholder="ivan_ivanov"
+                    value={form.username}
+                    onChange={(e) =>
+                        setForm({ ...form, username: e.target.value })
+                    }
+                />
+
+                <Input
+                    label="Пароль"
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) =>
+                        setForm({ ...form, password: e.target.value })
+                    }
+                />
+
+                <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-4"
+                >
+                    {loading ? 'Входим...' : 'Войти'}
+                </Button>
+            </form>
+        </div>
+    );
+}

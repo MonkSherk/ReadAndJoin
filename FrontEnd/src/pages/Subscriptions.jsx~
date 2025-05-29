@@ -1,0 +1,48 @@
+import React, { useEffect, useState } from 'react'
+import Layout from 'src/components/layout/Layout'
+import api from 'src/utils/api'
+import Input from 'src/components/ui/Input'
+import Button from '@/components/ui/Button'
+
+export default function Subscriptions() {
+    const [tags, setTags] = useState([])
+    const [newTag, setNewTag] = useState('')
+    const [error, setError] = useState(null)
+
+    useEffect(() => {
+        api.get('/users/subscriptions/').then(res => setTags(res.data))
+    }, [])
+
+    const handleAdd = async () => {
+        setError(null)
+        try {
+            const res = await api.post('/users/subscriptions/', { tag_name: newTag })
+            setTags([...tags, res.data])
+            setNewTag('')
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Ошибка')
+        }
+    }
+
+    return (
+        <Layout>
+            <h2 className="text-3xl font-serif mb-6">Подписки на теги</h2>
+            <div className="mb-4">
+                <Input
+                    placeholder="Новый тег"
+                    value={newTag}
+                    onChange={e => setNewTag(e.target.value)}
+                />
+                <Button className="ml-2" onClick={handleAdd}>Добавить</Button>
+            </div>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <ul>
+                {tags.map(t => (
+                    <li key={t.tag_name} className="mb-2">
+                        #{t.tag_name}
+                    </li>
+                ))}
+            </ul>
+        </Layout>
+    )
+}

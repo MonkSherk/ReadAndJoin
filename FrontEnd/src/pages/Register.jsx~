@@ -1,0 +1,97 @@
+import { useState } from 'react';
+import Input from 'src/components/ui/Input';
+import FileUpload from 'src/components/ui/FileUpload';
+import Button from 'src/components/ui/Button';
+import ThemeToggle from 'src/components/ui/ThemeToggle';
+import api from 'src/utils/api';
+import { useNavigate } from 'react-router-dom';
+
+export default function Register() {
+    const nav = useNavigate();
+    const [form, setForm] = useState({ username: '', email: '', password: '' });
+    const [avatar, setAvatar] = useState(null);
+    const [errors, setErrors] = useState({});
+    const [submitError, setSubmitError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setErrors({});
+        setSubmitError('');
+        const data = new FormData();
+        data.append('username', form.username);
+        data.append('email', form.email);
+        data.append('password', form.password);
+        if (avatar) data.append('avatar', avatar);
+
+        try {
+            await api.post('/users/register/', data, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            nav('/confirm');
+        } catch (err) {
+            if (err.response?.data) {
+                setErrors(err.response.data);
+            } else {
+                setSubmitError('Что-то пошло не так. Попробуйте снова.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="absolute top-4 right-4"><ThemeToggle/></div>
+            <form
+                onSubmit={handleSubmit}
+                className={`
+          w-full max-w-md p-8 bg-white dark:bg-gray-800
+          rounded-3xl shadow-lg transition
+          ${submitError ? 'animate-shake' : ''}
+        `}
+            >
+                <h2 className="text-2xl font-bold mb-6 text-center">
+                    Создать аккаунт
+                </h2>
+                {submitError && (
+                    <p className="mb-4 text-center text-red-500 animate-fadeIn">
+                        {submitError}
+                    </p>
+                )}
+                <FileUpload
+                    label="Аватар"
+                    onFileSelect={setAvatar}
+                    invalid={errors.avatar?.[0]}
+                />
+                <Input
+                    label="Имя пользователя"
+                    placeholder="ivan_ivanov"
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                    invalid={errors.username?.[0]}
+                />
+                <Input
+                    label="Email"
+                    type="email"
+                    placeholder="example@mail.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    invalid={errors.email?.[0]}
+                />
+                <Input
+                    label="Пароль"
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    invalid={errors.password?.[0]}
+                />
+                <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+                </Button>
+            </form>
+        </div>
+    );
+}
